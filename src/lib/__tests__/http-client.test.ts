@@ -214,6 +214,48 @@ describe('HttpClient', () => {
     });
   });
 
+  describe('base URL with a path prefix', () => {
+    it.each([
+      ['https://hub.example.com/projects/abc', 'https://hub.example.com/projects/abc/api/items'],
+      ['https://hub.example.com/projects/abc/', 'https://hub.example.com/projects/abc/api/items'],
+      ['https://api.example.com', 'https://api.example.com/api/items'],
+      ['https://api.example.com/', 'https://api.example.com/api/items'],
+    ])('resolves /api/items against %s', async (baseUrl, expected) => {
+      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
+
+      const client = createClient(mockFetch, { baseUrl });
+      await client.get('/api/items');
+
+      expect(mockFetch.mock.calls[0][0]).toBe(expected);
+    });
+
+    it('keeps the prefix when query params are added', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
+
+      const client = createClient(mockFetch, { baseUrl: 'https://hub.example.com/projects/abc' });
+      await client.get('/api/items', { params: { limit: '10' } });
+
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        'https://hub.example.com/projects/abc/api/items?limit=10'
+      );
+    });
+
+    it('leaves an absolute request URL untouched', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
+
+      const client = createClient(mockFetch, { baseUrl: 'https://hub.example.com/projects/abc' });
+      await client.get('https://functions.example.com/hello');
+
+      expect(mockFetch.mock.calls[0][0]).toBe('https://functions.example.com/hello');
+    });
+
+    it('exposes the base URL without a trailing slash', () => {
+      const client = createClient(vi.fn(), { baseUrl: 'https://hub.example.com/projects/abc/' });
+
+      expect(client.baseUrl).toBe('https://hub.example.com/projects/abc');
+    });
+  });
+
   describe('timeout', () => {
     it('should abort and throw REQUEST_TIMEOUT when request exceeds timeout', async () => {
       const mockFetch = vi.fn().mockImplementation((_url: string, opts: any) => {
