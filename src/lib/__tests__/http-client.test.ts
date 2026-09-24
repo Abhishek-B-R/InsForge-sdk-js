@@ -249,6 +249,28 @@ describe('HttpClient', () => {
       expect(mockFetch.mock.calls[0][0]).toBe('https://functions.example.com/hello');
     });
 
+    it('leaves a protocol-relative request URL on its own host', async () => {
+      // `//host/path` names a host and borrows only the scheme. Stripping the
+      // leading slashes turned it into a path segment, so the request went to
+      // the base host with `functions.example.com` in the path, carrying the
+      // Authorization header with it.
+      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
+
+      const client = createClient(mockFetch, { baseUrl: 'https://hub.example.com/projects/abc' });
+      await client.get('//functions.example.com/hello');
+
+      expect(mockFetch.mock.calls[0][0]).toBe('https://functions.example.com/hello');
+    });
+
+    it('still collapses a doubled leading slash on a same-origin path', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
+
+      const client = createClient(mockFetch, { baseUrl: 'https://hub.example.com/projects/abc' });
+      await client.get('/api/items');
+
+      expect(mockFetch.mock.calls[0][0]).toBe('https://hub.example.com/projects/abc/api/items');
+    });
+
     it('exposes the base URL without a trailing slash', () => {
       const client = createClient(vi.fn(), { baseUrl: 'https://hub.example.com/projects/abc/' });
 

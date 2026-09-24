@@ -8,5 +8,11 @@
  */
 export function resolveUrl(baseUrl: string, path: string): URL {
   const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  // A protocol-relative URL carries its own host and borrows only the scheme,
+  // so its slashes are not a leading slash to strip. `//cdn.example.com/x`
+  // means that host, not a `cdn.example.com/x` segment under the base.
+  if (path.startsWith('//')) {
+    return new URL(path, base);
+  }
   return new URL(path.replace(/^\/+/, ''), base);
 }
