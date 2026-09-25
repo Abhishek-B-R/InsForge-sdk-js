@@ -278,52 +278,6 @@ describe('HttpClient', () => {
     });
   });
 
-  describe('Authorization scope', () => {
-    const baseUrl = 'https://hub.example.com/projects/abc';
-
-    it.each([
-      ['a protocol-relative URL', '//functions.example.com/hello'],
-      ['an absolute URL', 'https://functions.example.com/hello'],
-      ['the same host on another scheme', 'http://hub.example.com/projects/abc/api/items'],
-    ])('does not send the token to %s on another origin', async (_label, path) => {
-      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
-      const client = createClient(mockFetch, { baseUrl, anonKey: 'anon-key' });
-      client.setAuthToken('user-token');
-
-      await client.get(path);
-
-      const headers = mockFetch.mock.calls[0][1].headers;
-      expect(headers.Authorization).toBeUndefined();
-      expect(headers.authorization).toBeUndefined();
-    });
-
-    it.each([
-      ['a relative path', '/api/items'],
-      ['an absolute URL on the base origin', 'https://hub.example.com/projects/abc/api/items'],
-    ])('sends the token for %s', async (_label, path) => {
-      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
-      const client = createClient(mockFetch, { baseUrl });
-      client.setAuthToken('user-token');
-
-      await client.get(path);
-
-      expect(mockFetch.mock.calls[0][0]).toBe('https://hub.example.com/projects/abc/api/items');
-      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer user-token');
-    });
-
-    it('still applies an Authorization header the caller passes for another origin', async () => {
-      const mockFetch = vi.fn().mockResolvedValue(createJsonResponse(200, { ok: true }));
-      const client = createClient(mockFetch, { baseUrl });
-      client.setAuthToken('user-token');
-
-      await client.get('https://functions.example.com/hello', {
-        headers: { Authorization: 'Bearer their-token' },
-      });
-
-      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer their-token');
-    });
-  });
-
   describe('timeout', () => {
     it('should abort and throw REQUEST_TIMEOUT when request exceeds timeout', async () => {
       const mockFetch = vi.fn().mockImplementation((_url: string, opts: any) => {

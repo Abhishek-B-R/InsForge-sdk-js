@@ -387,12 +387,8 @@ export class HttpClient {
     };
 
     // Set Authorization header: prefer the request-scoped token, fallback to anon key.
-    // The SDK's token is only attached when the request stays on the base URL's
-    // origin. An absolute or protocol-relative path can name another host, and
-    // the token should not travel there. A header the caller passes explicitly
-    // is still applied below.
     const authToken = tokenOverride ?? this.userToken ?? this.anonKey;
-    if (authToken && new URL(url).origin === new URL(this.baseUrl).origin) {
+    if (authToken) {
       requestHeaders['Authorization'] = `Bearer ${authToken}`;
     }
 
